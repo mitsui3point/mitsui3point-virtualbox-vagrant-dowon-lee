@@ -43,7 +43,11 @@
 
 ### 설치
 - [vagrant](https://www.vagrantup.com/)
+- [vagrant brew](https://formulae.brew.sh/cask/vagrant)
 
 ### guide & boxes cloud page
 - [vagrant doc](https://developer.hashicorp.com/vagrant/docs)
 - [vagrant cloud](https://app.vagrantup.com/boxes/search)
+
+## Vagrant 사용
+- [Vagrant 를 이용하여 VM 제어하기](/01_how-to-control-vm-via-vagrant/README.md)
