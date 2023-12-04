@@ -3,7 +3,7 @@
 ## SSH 클라이언트 설치
 - [Termius](https://termius.com/)
 - [Termius brew](https://formulae.brew.sh/cask/termius)
-```bash
+```bsh
 id: balete4342@wisnick.com 
 pw: q~
 ``` 
@@ -44,7 +44,9 @@ end
 ```
 #### vagrant status 확인
 ```bash
-$ vagrant status
+vagrant status
+```
+```bash
 # log
 Current machine states:
 
@@ -53,7 +55,7 @@ k8s-master                running (virtualbox)
 ```
 ### vagrant up
 ```bash
-$ vagrant up
+vagrant up
 ```
 ```bash
 # log
@@ -80,8 +82,11 @@ Bringing machine 'k8s-master' up with 'virtualbox' provider...
 ### vagrant ssh 접속
 #### use vagrant
 ```bash
-$ vagrant ssh k8s-master
-vagrant@k8s-master:~$ 
+vagrant ssh k8s-master
+```
+```bash
+#result
+vagrant@k8s-master:~
 ```
 #### use termius: vm ip info
 ![termius_new_host](termius_new_host.png)
@@ -91,32 +96,38 @@ vagrant@k8s-master:~$
 ![termius_ssh_connected](termius_ssh_connected.png)
 #### use termius: localhost ip info
 ![termius_localhost_new_host](termius_localhost_new_host.png) 
-![termius_localhost_ssh_connected](.png)
+![termius_localhost_ssh_connected](termius_localhost_ssh_connected.png)
 ![termius_localhost_ssh_connection](termius_localhost_ssh_connection.png)
 
 ### docker install to vm
 #### 루트계정 유저로 로그인
 ```bash
-vagrant@k8s-master:~$ sudo su - 
+sudo su - 
+```
+```bash
+#result 
 root@k8s-master:~#
 ```
 
 #### root password 변경
 ```bash
-$ passwd root 
-New password:         #e.g. vagrant
+passwd root 
+```
+```bash
+#password input form
+New password:         #e.g. password
 Retype new password:
+#result
 passwd: password updated successfully
-
 ```
 #### [SWAP memory 비활성화 이유](https://kgw7401.tistory.com/50)
 ```bash
-$ swapoff -a && sed -i '/swap/s/^/#/' /etc/fstab # SWAP 비활성화
+swapoff -a && sed -i '/swap/s/^/#/' /etc/fstab # SWAP 비활성화
 ```
 
 #### 노드간 통신을 위한 Bridge 설정 (Iptables 커널 옵션 활성화)
 ```bash
-$ cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
 br_netfilter
 EOF
 cat <<EOF>>  /etc/sysctl.d/k8s.conf
@@ -125,16 +136,16 @@ net.bridge.bridge-nf-call-iptables = 1
 EOF
 ```
 ```bash
-$ sysctl --system
+sysctl --system
 ```
 
 #### Hostname 변경(Vagrantfile에서 변경 됨), Hosts 파일 수정 --> 각 노드의 ipaddress에 맞게 수정, Hostname 변경하지 않으면 kubeadm join 시 오류 발생
 ```bash
-$ hostname
-$ ping k8s-master
+hostname
+ping $(hostname)
 ```
 ```bash
-$ vi /etc/hosts 
+vi /etc/hosts 
 ```
 
 #### ip addr 대신 domain 으로 통신할 용도, domain 매핑 등록
@@ -146,57 +157,72 @@ $ vi /etc/hosts
 
 #### 필수 패키지 설치
 ```bash
-$ apt-get -y install ca-certificates curl gnupg net-tools
+apt-get -y install ca-certificates curl gnupg net-tools
 ```
+* 실패할 경우가 존재한다 이를 해결할 수 있는 방안
+  * 현재 설정하고 있는 서버가 k8s-master 일 경우
+```bash
+vi /etc/resolv.conf
+```
+```vi
+# update nameserver
+nameserver 1.1.1.1
+```
+
 
 #### Docker GPG key 추가
 * 위의 명령어는 Docker 패키지 저장소의 공식 GPG 키를 다운로드하고 시스템에 추가하는 것을 목적으로 실행.
 * 이 키를 추가하면 시스템은 Docker 패키지를 신뢰하고, 이 패키지 저장소에서 Docker를 설치 및 업데이트할 때 인증을 수행할 목적으로 추가.
 ```bash
-$ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 ```
 
 #### Docker repository 등록
 * 이 명령어는 Docker 패키지 저장소의 APT 저장소 설정을 생성하고 이 설정을 /etc/apt/sources.list.d/docker.list 파일에 저장을 목적으로 실행.
 * 이후 시스템에서 APT를 사용하여 Docker를 설치 또는 업데이트할 때, Docker 패키지 저장소를 참조하여 필요한 패키지를 다운로드 한다.
 ```bash
-$ echo \
+echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
   $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 ```
 
 #### Docker engine 설치 
 ```bash
-$ apt-get update
-$ apt-get install -y docker-ce docker-ce-cli containerd.io
+apt-get update
+apt-get install -y docker-ce docker-ce-cli containerd.io
 ```
 
 #### Docker 버전 확인
 ```bash
-$ docker version
+docker version
+```
+#### Docker 서비스 등록
+```bash
+systemctl enable docker
+systemctl status docker 
 ```
 
 #### dockeradmin 유저 생성
 ```bash
-$ useradd dockeradmin
-$ passwd dockeradmin
+useradd dockeradmin
+passwd dockeradmin
 ```
 #### dockeradmin 그룹 생성
 * docker 그룹에 dockeradmin 유저를 추가; docker 그룹에서만 docker service 를 사용하게 하는 목적
 ```bash
-$ usermod -aG docker dockeradmin
+usermod -aG docker dockeradmin
 ```
 
 #### docker compose 
 * 이 명령어 그룹은 Docker Compose를 다운로드하고 실행 가능한 바이너리 파일로 설치하는 작업을 수행
 ```bash
-$ curl -L "https://github.com/docker/compose/releases/download/1.24.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-$ chmod +x /usr/local/bin/docker-compose
-$ ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
-$ docker-compose -version 
+curl -L "https://github.com/docker/compose/releases/download/1.24.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
+ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+docker-compose -version 
 ```
 #### docker run test
 ```bash
-$ docker pull nginx
-$ docker run --name mynginx -d -p 80:80 nginx 
+docker pull nginx
+docker run --name mynginx -d -p 80:80 nginx 
 ```
